@@ -1,0 +1,4 @@
+https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_client_applications
+https://developers.google.com/identity/protocols/oauth2r
+https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_server
+https://www.c-sharpcorner.com/article/creating-your-own-web-server-using-C-Sharp/
