@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
@@ -51,18 +52,27 @@ namespace IO_Game
 
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path == "/game")
+                if (context.Request.Path.ToString().Contains("/game"))
                 {
+                    context.Response.Headers.Add("Cache-Control", "no-cache");
+                    context.Response.Headers.Add("Pragma", "no-cache");
+                    if (!Server.GameExists(context.Request.QueryString.ToString()[1..]))
+                    {
+                        StreamReader sr = File.OpenText(env.WebRootPath + "/errors/GAME_NOT_FOUND.html");
+                        string strContents = sr.ReadToEnd();
+                        //To display normal raw contents
+                        await context.Response.WriteAsync(strContents);
+                        sr.Close();
+                    }
                     if (context.WebSockets.IsWebSocketRequest)
                     {
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        await MyWebSocketHandler(context, webSocket);
+                        await SocketHandler(context, webSocket);
+                        //[Game].AddPlayer(webSocket)
                     }
+                    else await next();
                 }
-                else
-                {
-                    await next();
-                }
+                else await next();
             });
 
             app.UseDefaultFiles();
@@ -80,7 +90,7 @@ namespace IO_Game
             });
 
         }
-        private async Task MyWebSocketHandler(HttpContext context, WebSocket webSocket)
+        private static async Task SocketHandler(HttpContext context, WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
