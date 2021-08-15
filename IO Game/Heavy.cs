@@ -9,7 +9,7 @@ namespace IO_Game
 		const byte SHORT = 0;
 		const byte LONG = 1;
 		const byte FULL = 2;
-		const int units = 11;
+		private const int units = 11;
 		// Like Number.toFixed(), but optimised for no trailing zeroes
 		static double FixMe(double num)
 		{
@@ -32,9 +32,9 @@ namespace IO_Game
 		// This is an array that defines all of the symbol names for the units of weight.
 		static readonly string[] shNamesPerKilo = new string[units] { "g", "kg", "T", "kT", "MT", "GT", "TT", "PT", "ET", "ZT", "YT" };
 		// This array stores all of the "digits" in the base-1000 number
-		List<int> baseKDigits = new List<int>(units) { 0 };
+		private List<int> baseKDigits = new List<int>(units) { 0 };
 		// Function to convert this number to a human-readable string
-		string Readable(byte format)
+		public string Readable(byte format)
 		{
 			if (format == FULL)
 			{
@@ -60,7 +60,7 @@ namespace IO_Game
 			throw new Exception("format is not a valid Heavy.(FORMAT)");
 		}
 		// This function adds a number or class Heavy to the current class Heavy.
-		void Add(int num)
+		public void Add(int num)
 		{
 			// If the number is an actual number...
 			// Then turn it into a class Heavy (cuz im lazy)
@@ -70,7 +70,7 @@ namespace IO_Game
 			// And then call add on the current class
 			Add(n);
 		}
-		void Add(Heavy num)
+		public void Add(Heavy num)
 		{
 			// If the number is a class Heavy...
 			// Which "digits" need to be carried over into the next "digit"
@@ -122,7 +122,7 @@ namespace IO_Game
 			}
 		}
 		// Sets the value of the current class Heavy to a number or another class Heavy
-		void Set(int num)
+		public void Set(int num)
 		{
 			// Is num a number?
 			// Again, reset the current class Heavy
@@ -140,7 +140,7 @@ namespace IO_Game
 				}
 			}
 		}
-		void Set(Heavy num)
+		public void Set(Heavy num)
 		{
 			// Is num heavy?
 			// Delete what we already have
@@ -151,7 +151,7 @@ namespace IO_Game
 				baseKDigits.Add(num.baseKDigits[i]);
 			}
 		}
-		void Negate()
+		public void Negate()
 		{
 			// Make every digit negative as that will work
 			for (var i = 0; i < baseKDigits.Count; i++)
@@ -159,13 +159,13 @@ namespace IO_Game
 				baseKDigits[i] = -baseKDigits[i];
 			}
 		}
-		void Subtract(int num)
+		public void Subtract(int num)
 		{
 			// Is num a number?
 			// Just add negative
 			Add(-num);
 		}
-		void Subtract(Heavy num)
+		public void Subtract(Heavy num)
 		{
 			// Is num heavy?
 			// Make it negative
@@ -174,6 +174,28 @@ namespace IO_Game
 			Add(num);
 			// Cover our tracks
 			num.Negate();
+		}
+		public string Compare(Heavy num)
+        {
+			//this <|=|> num
+			if (num.baseKDigits[0] < 0 && baseKDigits[0] >= 0) return "<";
+			if (baseKDigits[0] < 0 && num.baseKDigits[0] >= 0) return ">";
+            if (baseKDigits[0] < 0)
+            {
+				if (baseKDigits.Count > num.baseKDigits.Count) return "<";
+				if (baseKDigits.Count < num.baseKDigits.Count) return ">";
+			}
+			else
+            {
+				if (baseKDigits.Count > num.baseKDigits.Count) return ">";
+				if (baseKDigits.Count < num.baseKDigits.Count) return "<";
+			}
+			for(var i = baseKDigits.Count - 1; i >= 0; i++)
+            {
+				if (baseKDigits[i] > num.baseKDigits[i]) return ">";
+				if (baseKDigits[i] < num.baseKDigits[i]) return "<";
+            }
+			return "=";
 		}
 	}
 }

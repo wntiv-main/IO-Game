@@ -64,11 +64,10 @@ namespace IO_Game
                         await context.Response.WriteAsync(strContents);
                         sr.Close();
                     }
-                    if (context.WebSockets.IsWebSocketRequest)
+                    else if (context.WebSockets.IsWebSocketRequest)
                     {
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        await SocketHandler(context, webSocket);
-                        //[Game].AddPlayer(webSocket)
+                        Server.GetGame(context.Request.QueryString.ToString()[1..]).AddPlayer(webSocket);
                     }
                     else await next();
                 }
