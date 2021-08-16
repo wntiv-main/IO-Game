@@ -1,4 +1,5 @@
 (function () {
+	alert("GAME JOINED");
 	var canvas = document.createElement('canvas');
 	canvas.width = canvas.style.width = window.innerWidth;
 	canvas.height = canvas.style.height = window.innerHeight;
@@ -18,9 +19,8 @@
 		});
 	});
 	gameSocket.addEventListener("close", function (e) {
+		alert(e.reason);
 		switch (e.reason) {
-			case "GAME_NOT_FOUND":7
-				break;
         }
 	});
 })();

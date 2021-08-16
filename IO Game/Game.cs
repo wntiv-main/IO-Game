@@ -6,21 +6,21 @@ using System.Collections.Generic;
 
 namespace IO_Game
 {
-    public class Game
+    public static class Gamemodes
     {
-        public static class Gamemodes
+        static Gamemode FFA = new Gamemode("FFA");
+        static Gamemode CTF = new Gamemode("CTF");
+        public class Gamemode
         {
-            static Gamemode FFA = new Gamemode("FFA");
-            static Gamemode CTF = new Gamemode("CTF");
-            public class Gamemode
+            private readonly string gamemode;
+            public Gamemode(string mode)
             {
-                private readonly string gamemode;
-                public Gamemode(string mode)
-                {
-                    gamemode = mode;
-                }
+                gamemode = mode;
             }
         }
+    }
+    public class Game
+    {
         public class Item
         {
             //...
@@ -159,7 +159,7 @@ namespace IO_Game
             games.Add(g);
             return g.Id;
         }
-        public static ID FindGame(Game.Gamemodes.Gamemode gamemode)
+        public static ID FindGame(Gamemodes.Gamemode gamemode)
         {
             for (var i = 0; i < games.Count; i++)
             {

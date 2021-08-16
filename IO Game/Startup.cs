@@ -56,7 +56,7 @@ namespace IO_Game
                 {
                     context.Response.Headers.Add("Cache-Control", "no-cache");
                     context.Response.Headers.Add("Pragma", "no-cache");
-                    if (!Server.GameExists(context.Request.QueryString.ToString()[1..]))
+                    if (!context.Request.QueryString.HasValue || !Server.GameExists(context.Request.QueryString.ToString()[1..]))
                     {
                         StreamReader sr = File.OpenText(env.WebRootPath + "/errors/GAME_NOT_FOUND.html");
                         string strContents = sr.ReadToEnd();
