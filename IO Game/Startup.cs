@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading;
@@ -121,7 +122,7 @@ namespace IO_Game
             while (!result.CloseStatus.HasValue)
             {
                 // Get the message and see what class Player needs to do with it
-                string reply = player.SocketHandler(System.Text.Encoding.UTF8.GetString(inBuffer));
+                string reply = player.SocketHandler(System.Text.Json.JsonSerializer.Deserialize<Message>(System.Text.Encoding.UTF8.GetString(inBuffer).Replace((char)0x00, ' ')));
                 // If we need to send anything back...
                 if (reply.Length > 0)
                 {
@@ -134,6 +135,7 @@ namespace IO_Game
             }
             // If you die, I die too.  LOL.
             await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            player.joinedGame.RemovePlayer(player);
         }
     }
 }

@@ -8,14 +8,18 @@ using System.Diagnostics;
 
 namespace IO_Game
 {
+    public class Message
+    {
+        public string Type { get; set; }
+    }
     // Represents all the gamemodes
     public static class Gamemodes
     {
         static readonly List<Gamemode> gamemodes = new List<Gamemode>();
         // Free for all
-        static Gamemode FFA = new CreateGamemode("FFA");
+        static readonly Gamemode FFA = new CreateGamemode("FFA");
         // Capture the flag
-        static Gamemode CTF = new CreateGamemode("CTF");
+        static readonly Gamemode CTF = new CreateGamemode("CTF");
         // Represents a single Gamemode
         public class Gamemode
         {
@@ -109,10 +113,15 @@ namespace IO_Game
             {
             }
             // What to do with our message????
-            public string SocketHandler(string message)
+            public string SocketHandler(Message message)
             {
                 // Stuff.
-                Debug.WriteLine(message);
+                switch (message.Type)
+                {
+                    default:
+                        Debug.WriteLine(message.Type);
+                        break;
+                }
                 return "hello";
             }
             // This players weight as a Heavy
@@ -120,8 +129,7 @@ namespace IO_Game
             // What do they have? in [slot name, item] forms
             // slot names such as "equipped.0, equipped.13, inventory.0, inventory.14"
             private Dictionary<string, Item> inventory = new Dictionary<string, Item>();
-            // We need to listen to the user so we know what they're doing...
-            
+            public Game joinedGame;
         }
         // Represents a position on the game's map
         private class Position
@@ -148,7 +156,7 @@ namespace IO_Game
         // This game's gamemode
         public readonly Gamemodes.Gamemode gamemode;
         // This game's shop
-        private Shop shop = new Shop();
+        private readonly Shop shop = new Shop();
         // List of all players
         private List<Player> players = new List<Player>();
         // Probable do something on construction
@@ -164,6 +172,18 @@ namespace IO_Game
         public void AddPlayer(Player player)
         {
             players.Add(player);
+            player.joinedGame = this;
+        }
+        public void RemovePlayer(Player player)
+        {
+            for(var i = 0; i < players.Count; i++)
+            {
+                if(player.Equals(players[i]))
+                {
+                    players.RemoveAt(i);
+                }
+            }
+            player.joinedGame = null;
         }
     }
     // Represents a game ID
