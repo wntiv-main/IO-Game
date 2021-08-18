@@ -4,8 +4,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.IO;
 using System.Net.WebSockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO_Game
 {
@@ -58,8 +61,8 @@ namespace IO_Game
                 // If the user is trying to go to /game or something like that
                 endpoints.MapGet("/game", async context => {
                     // No cache (due to the constant changing between error pages and game pages etc)
-                    context.Response.Headers.Add("Cache-Control", "no-cache");
-                    context.Response.Headers.Add("Pragma", "no-cache");
+                    //context.Response.Headers.Add("Cache-Control", "no-cache");
+                    //context.Response.Headers.Add("Pragma", "no-cache");
                     // If the game doesn't exist
                     if (!context.Request.QueryString.HasValue || !Server.GameExists(context.Request.QueryString.ToString()[1..]))
                     {
@@ -74,8 +77,12 @@ namespace IO_Game
                     {
                         // Accept the request
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        // And pass it over to our amazing friend, the class Game
-                        Server.GetGame(context.Request.QueryString.ToString()[1..]).AddPlayer(webSocket);
+                        // Create a player representing the user
+                        Game.Player player = new Game.Player();
+                        // Add them to the right game
+                        Server.GetGame(context.Request.QueryString.ToString()[1..]).AddPlayer(player);
+                        // And handle any requests from the socket
+                        await SocketHandler(webSocket, player);
                     }
                     else
                     {
@@ -86,11 +93,47 @@ namespace IO_Game
                         sr.Close();
                     }
                 });
+                endpoints.MapGet("/findGame", async context =>
+                {
+                    if (context.Request.QueryString.HasValue && Gamemodes.IsGamemode(context.Request.QueryString.ToString()[1..]))
+                    {
+                        await context.Response.WriteAsync(Server.FindGame(new Gamemodes.Gamemode(context.Request.QueryString.ToString()[1..])).Id);
+                    }
+                    else
+                    {
+                        await context.Response.WriteAsync(Server.FindGame().Id);
+                    }
+                });
             });
 
             // This means that if nothing else happens then just use the normal file-system
             app.UseDefaultFiles();
             app.UseStaticFiles();
+        }
+        private async Task SocketHandler(WebSocket socket, Game.Player player)
+        {
+            // Store the result of the socket
+            var inBuffer = new byte[1024 * 4];
+            WebSocketReceiveResult result;
+            // Wait for the result
+            result = await socket.ReceiveAsync(new ArraySegment<byte>(inBuffer), CancellationToken.None);
+            // And as long as the socket is open...
+            while (!result.CloseStatus.HasValue)
+            {
+                // Get the message and see what class Player needs to do with it
+                string reply = player.SocketHandler(System.Text.Encoding.UTF8.GetString(inBuffer));
+                // If we need to send anything back...
+                if (reply.Length > 0)
+                {
+                    // Then send it back
+                    var outBuffer = System.Text.Encoding.UTF8.GetBytes(reply);
+                    await socket.SendAsync(new ArraySegment<byte>(outBuffer, 0, outBuffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+                // Wait for the next result
+                result = await socket.ReceiveAsync(new ArraySegment<byte>(inBuffer), CancellationToken.None);
+            }
+            // If you die, I die too.  LOL.
+            await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
     }
 }

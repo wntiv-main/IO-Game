@@ -13,13 +13,16 @@
 
 	//Socket
 	var gameSocket = new WebSocket(location.href.replace("http", "ws"));
+	window.gameSocket = gameSocket;
 	gameSocket.addEventListener("open", function () {
+		console.log("open");
 		gameSocket.addEventListener("message", function () {
 
 		});
 	});
 	gameSocket.addEventListener("close", function (e) {
-		alert(e.reason);
+		console.log("close");
+		console.log(e);
 		switch (e.reason) {
         }
 	});

@@ -3,24 +3,57 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
+using System.Diagnostics;
 
 namespace IO_Game
 {
     // Represents all the gamemodes
     public static class Gamemodes
     {
+        static readonly List<Gamemode> gamemodes = new List<Gamemode>();
         // Free for all
-        static Gamemode FFA = new Gamemode("FFA");
+        static Gamemode FFA = new CreateGamemode("FFA");
         // Capture the flag
-        static Gamemode CTF = new Gamemode("CTF");
+        static Gamemode CTF = new CreateGamemode("CTF");
         // Represents a single Gamemode
         public class Gamemode
         {
-            private readonly string gamemode;
+            protected string gamemode;
             public Gamemode(string mode)
             {
                 gamemode = mode;
             }
+            public override bool Equals(object mode)
+            {
+                if (mode is Gamemode) return gamemode == (mode as Gamemode).gamemode;
+                else return this.Equals(mode);
+            }
+            public override int GetHashCode()
+            {
+                return gamemode.GetHashCode();
+            }
+        }
+        private class CreateGamemode : Gamemode
+        {
+            public CreateGamemode(string mode) : base(mode)
+            {
+                gamemodes.Add(this);
+            }
+        }
+        public static bool IsGamemode(Gamemode mode)
+        {
+            for (var i = 0; i < gamemodes.Count; i++)
+            {
+                if (gamemodes[i].Equals(mode))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool IsGamemode(string mode){
+            return IsGamemode(new Gamemode(mode));
         }
     }
     // Represents a game/arena
@@ -68,43 +101,27 @@ namespace IO_Game
             public void AddItem(ShopItem item) => shopItems.Add(item);
         }
         // Represents a player
-        private class Player
+        public class Player
         {
-            // The SocketHandler() reference we're using
-            private Task socketHandler;
             // When we create a player, they need to have a connected WebSocket
-            public Player(WebSocket s)
+            // Not anymore tho.
+            public Player()
             {
-                // Snag that Sock(et)
-                socket = s;
-                // And start up our listener
-                socketHandler = SocketHandler();
             }
-            // The stolen Sock(et)
-            private readonly WebSocket socket;
+            // What to do with our message????
+            public string SocketHandler(string message)
+            {
+                // Stuff.
+                Debug.WriteLine(message);
+                return "hello";
+            }
             // This players weight as a Heavy
             private Heavy size = new Heavy();
             // What do they have? in [slot name, item] forms
             // slot names such as "equipped.0, equipped.13, inventory.0, inventory.14"
             private Dictionary<string, Item> inventory = new Dictionary<string, Item>();
             // We need to listen to the user so we know what they're doing...
-            private async Task SocketHandler()
-            {
-                // Store the result of the socket
-                var buffer = new byte[1024 * 4];
-                // Wait for the result
-                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                while (!result.CloseStatus.HasValue)
-                {
-                    // Send it right on back (for the moment)
-                    await socket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
-
-                    // Wait for the next result
-                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                }
-                // If you die, I die too.
-                await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            }
+            
         }
         // Represents a position on the game's map
         private class Position
@@ -127,7 +144,7 @@ namespace IO_Game
             }
         }
         // Game ID
-        public readonly ID Id;
+        public readonly ID Id = new ID();
         // This game's gamemode
         public readonly Gamemodes.Gamemode gamemode;
         // This game's shop
@@ -144,16 +161,16 @@ namespace IO_Game
             gamemode = mode;
         }
         // Functionality to add a player to the game
-        public void AddPlayer(WebSocket socket)
+        public void AddPlayer(Player player)
         {
-            players.Add(new Player(socket));
+            players.Add(player);
         }
     }
     // Represents a game ID
     public class ID
     {
         // The ID
-        readonly string Id;
+        public readonly string Id;
         static List<string> reserved = new List<string>();
         static Random random = new Random();
         // Create a unique id
