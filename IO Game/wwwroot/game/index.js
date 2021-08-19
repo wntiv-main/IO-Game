@@ -1,5 +1,4 @@
 (function () {
-	alert("GAME JOINED");
 	var canvas = document.createElement('canvas');
 	canvas.width = canvas.style.width = window.innerWidth;
 	canvas.height = canvas.style.height = window.innerHeight;
@@ -15,14 +14,11 @@
 	var gameSocket = new WebSocket(location.href.replace("http", "ws"));
 	window.gameSocket = gameSocket;
 	gameSocket.addEventListener("open", function () {
-		console.log("open");
 		gameSocket.addEventListener("message", function () {
 
 		});
 	});
 	gameSocket.addEventListener("close", function (e) {
-		console.log("close");
-		console.log(e);
 		switch (e.reason) {
         }
 	});

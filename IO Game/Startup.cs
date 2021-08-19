@@ -61,9 +61,6 @@ namespace IO_Game
             {
                 // If the user is trying to go to /game or something like that
                 endpoints.MapGet("/game", async context => {
-                    // No cache (due to the constant changing between error pages and game pages etc)
-                    //context.Response.Headers.Add("Cache-Control", "no-cache");
-                    //context.Response.Headers.Add("Pragma", "no-cache");
                     // If the game doesn't exist
                     if (!context.Request.QueryString.HasValue || !Server.GameExists(context.Request.QueryString.ToString()[1..]))
                     {
@@ -94,11 +91,15 @@ namespace IO_Game
                         sr.Close();
                     }
                 });
-                endpoints.MapGet("/findGame", async context =>
+                endpoints.MapPost("/findGame", async context =>
                 {
-                    if (context.Request.QueryString.HasValue && Gamemodes.IsGamemode(context.Request.QueryString.ToString()[1..]))
+                    Stream read = context.Request.BodyReader.AsStream();
+                    byte[] buffer = new byte[1024 * 4];
+                    read.Read(buffer, 0, 1024 * 4);
+                    string body = System.Text.Encoding.UTF8.GetString(buffer).Replace("\0", "").Trim();
+                    if (body.Length > 0 && Gamemodes.IsGamemode(body))
                     {
-                        await context.Response.WriteAsync(Server.FindGame(new Gamemodes.Gamemode(context.Request.QueryString.ToString()[1..])).Id);
+                        await context.Response.WriteAsync(Server.FindGame(new Gamemodes.Gamemode(body)).Id);
                     }
                     else
                     {
@@ -122,7 +123,7 @@ namespace IO_Game
             while (!result.CloseStatus.HasValue)
             {
                 // Get the message and see what class Player needs to do with it
-                string reply = player.SocketHandler(System.Text.Json.JsonSerializer.Deserialize<Message>(System.Text.Encoding.UTF8.GetString(inBuffer).Replace((char)0x00, ' ')));
+                string reply = player.SocketHandler(System.Text.Json.JsonSerializer.Deserialize<Message>(System.Text.Encoding.UTF8.GetString(inBuffer).Replace("\0", "")));
                 // If we need to send anything back...
                 if (reply.Length > 0)
                 {
