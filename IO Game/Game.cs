@@ -11,6 +11,7 @@ namespace IO_Game
     public class Message
     {
         public string Type { get; set; }
+        public string Id { get; set; }
     }
     // Represents all the gamemodes
     public static class Gamemodes
@@ -69,7 +70,7 @@ namespace IO_Game
             //...
         }
         // Represents the shop in any given game
-        private class Shop
+        public class Shop
         {
             // Represents an item in the shop
             public class ShopItem
@@ -78,11 +79,14 @@ namespace IO_Game
                 private Heavy price;
                 // The item, as a class Item
                 private Item item;
+                public readonly ID Id = new ID();
+                public Shop shop;
                 // Construct the variables
-                public ShopItem(Heavy p, Item i)
+                public ShopItem(Heavy p, Item i, Shop s)
                 {
                     price = p;
                     item = i;
+                    shop = s;
                 }
                 // Buy an item
                 public Item Buy(Heavy budget)
@@ -102,7 +106,34 @@ namespace IO_Game
             // List of all the shop's items
             private List<ShopItem> shopItems = new List<ShopItem>();
             // Functionality to add MORE items
-            public void AddItem(ShopItem item) => shopItems.Add(item);
+            public void AddItem(ShopItem item)
+            {
+                shopItems.Add(item);
+                item.shop.shopItems.Remove(item);
+                item.shop = this;
+            }
+            public ShopItem FindItem(string id)
+            {
+                for(var i = 0; i < shopItems.Count; i++)
+                {
+                    if (shopItems[i].Id.Id == id)
+                    {
+                        return shopItems[i];
+                    }
+                }
+                throw new Exception("ITEM_DOESN'T_EXIST");
+            }
+            public ShopItem FindItem(ID id)
+            {
+                for (var i = 0; i < shopItems.Count; i++)
+                {
+                    if (shopItems[i].Id.Id == id.Id)
+                    {
+                        return shopItems[i];
+                    }
+                }
+                throw new Exception("ITEM_DOESN'T_EXIST");
+            }
         }
         // Represents a player
         public class Player
@@ -118,17 +149,36 @@ namespace IO_Game
                 // Stuff.
                 switch (message.Type)
                 {
+                    case "buyItem":
+                        BuyItem(joinedGame.shop.FindItem(message.Id));
+                        break;
                     default:
                         Debug.WriteLine(message.Type);
                         break;
                 }
                 return "hello";
             }
+            public void BuyItem(Shop.ShopItem item)
+            {
+                try { 
+                    inventory.PushItem(item.Buy(size));
+                }
+                catch(Exception e)
+                {
+                    var _ = e;
+                }
+            }
             // This players weight as a Heavy
             private Heavy size = new Heavy();
             // What do they have? in [slot name, item] forms
             // slot names such as "equipped.0, equipped.13, inventory.0, inventory.14"
-            private Dictionary<string, Item> inventory = new Dictionary<string, Item>();
+            //private Dictionary<string, Item> inventory = new Dictionary<string, Item>();
+            private Inventory inventory = new Inventory();
+            public class Inventory
+            {
+                public void PushItem(Item item) { 
+                }
+            }
             public Game joinedGame;
         }
         // Represents a position on the game's map

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace IO_Game
 {
 	// Class for numbers representing mass up to yotta-tonnes
-	class Heavy
+	public class Heavy
 	{
 		const byte SHORT = 0;
 		const byte LONG = 1;
