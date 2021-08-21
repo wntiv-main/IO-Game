@@ -10,8 +10,9 @@ namespace IO_Game
 {
     public class Message
     {
-        public string Type { get; set; }
-        public string Id { get; set; }
+        public string Type { get; set; } = "";
+        public string Id { get; set; } = "";
+        public string Reason { get; set; } = "";
     }
     // Represents all the gamemodes
     public static class Gamemodes
@@ -31,8 +32,13 @@ namespace IO_Game
             }
             public override bool Equals(object mode)
             {
-                if (mode is Gamemode) return gamemode == (mode as Gamemode).gamemode;
-                else return this.Equals(mode);
+                if (mode is Gamemode) {
+                    return gamemode == (mode as Gamemode).gamemode;
+                }
+                else
+                {
+                    return Equals(mode);
+                }
             }
             public override int GetHashCode()
             {
@@ -144,29 +150,43 @@ namespace IO_Game
             {
             }
             // What to do with our message????
-            public string SocketHandler(Message message)
+            public Message SocketHandler(Message message)
             {
+                Message response = new Message();
                 // Stuff.
                 switch (message.Type)
                 {
                     case "buyItem":
-                        BuyItem(joinedGame.shop.FindItem(message.Id));
+                        try {
+                            BuyItem(joinedGame.shop.FindItem(message.Id)); 
+                        }
+                        catch(Exception e)
+                        {
+                            switch (e.Message)
+                            {
+                                case "CANNOT_AFFORD":
+                                    response.Type = "cannotBuy";
+                                    response.Reason = "CANNOT_AFFORD";
+                                    break;
+                                case "ITEM_DOESN'T_EXIST":
+                                    response.Type = "cannotBuy";
+                                    response.Reason = "ITEM_DOESN'T_EXIST";
+                                    break;
+                                default:
+                                    throw;
+                            }
+                        }
                         break;
                     default:
                         Debug.WriteLine(message.Type);
                         break;
                 }
-                return "hello";
+                return response;
             }
             public void BuyItem(Shop.ShopItem item)
             {
-                try { 
-                    inventory.PushItem(item.Buy(size));
-                }
-                catch(Exception e)
-                {
-                    var _ = e;
-                }
+                Item purchase = item.Buy(size);
+                inventory.PushItem(purchase);
             }
             // This players weight as a Heavy
             private Heavy size = new Heavy();

@@ -14,12 +14,17 @@
 	var gameSocket = new WebSocket(location.href.replace("http", "ws"));
 	window.gameSocket = gameSocket;
 	gameSocket.addEventListener("open", function () {
-		gameSocket.addEventListener("message", function () {
-
+		gameSocket.addEventListener("message", function (e) {
+			var message = JSON.parse(e.data);
+			switch (message.Type) {
+				//...
+            }
 		});
 	});
 	gameSocket.addEventListener("close", function (e) {
 		switch (e.reason) {
+			default:
+				alert(e.reason);
         }
 	});
 })();

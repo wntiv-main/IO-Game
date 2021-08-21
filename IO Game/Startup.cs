@@ -114,29 +114,36 @@ namespace IO_Game
         }
         private async Task SocketHandler(WebSocket socket, Game.Player player)
         {
-            // Store the result of the socket
-            var inBuffer = new byte[1024 * 4];
-            WebSocketReceiveResult result;
-            // Wait for the result
-            result = await socket.ReceiveAsync(new ArraySegment<byte>(inBuffer), CancellationToken.None);
-            // And as long as the socket is open...
-            while (!result.CloseStatus.HasValue)
-            {
-                // Get the message and see what class Player needs to do with it
-                string reply = player.SocketHandler(System.Text.Json.JsonSerializer.Deserialize<Message>(System.Text.Encoding.UTF8.GetString(inBuffer).Replace("\0", "")));
-                // If we need to send anything back...
-                if (reply.Length > 0)
-                {
-                    // Then send it back
-                    var outBuffer = System.Text.Encoding.UTF8.GetBytes(reply);
-                    await socket.SendAsync(new ArraySegment<byte>(outBuffer, 0, outBuffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
-                // Wait for the next result
+            try {
+                // Store the result of the socket
+                var inBuffer = new byte[1024 * 4];
+                WebSocketReceiveResult result;
+                // Wait for the result
                 result = await socket.ReceiveAsync(new ArraySegment<byte>(inBuffer), CancellationToken.None);
+                // And as long as the socket is open...
+                while (!result.CloseStatus.HasValue)
+                {
+                    // Get the message and see what class Player needs to do with it
+                    Message response = player.SocketHandler(System.Text.Json.JsonSerializer.Deserialize<Message>(System.Text.Encoding.UTF8.GetString(inBuffer).Replace("\0", "")));
+                    // If we need to send anything back...
+                    if (response.Type.Length > 0)
+                    {
+                        string reply = System.Text.Json.JsonSerializer.Serialize(response);
+                        // Then send it back
+                        var outBuffer = System.Text.Encoding.UTF8.GetBytes(reply);
+                        await socket.SendAsync(new ArraySegment<byte>(outBuffer, 0, outBuffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
+                    // Wait for the next result
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(inBuffer), CancellationToken.None);
+                }
+                // If you die, I die too.  LOL.
+                await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+                player.joinedGame.RemovePlayer(player);
             }
-            // If you die, I die too.  LOL.
-            await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            player.joinedGame.RemovePlayer(player);
+            catch(Exception e)
+            {
+                await socket.CloseAsync(WebSocketCloseStatus.InvalidMessageType, "Could not process the request.", CancellationToken.None);
+            }
         }
     }
 }
